@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { InsertCall, Call, agentSessions, calls, InsertAgentSession } from "../drizzle/schema";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -89,4 +90,72 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+/**
+ * Get all calls, ordered by most recent first
+ */
+export async function getAllCalls() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(calls).orderBy((c) => c.createdAt) || [];
+}
+
+/**
+ * Get a single call by ID
+ */
+export async function getCallById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(calls).where(eq(calls.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Create a new call
+ */
+export async function createCall(data: InsertCall) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(calls).values(data);
+  return result;
+}
+
+/**
+ * Update a call
+ */
+export async function updateCallRecord(id: number, data: Partial<InsertCall>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.update(calls).set(data).where(eq(calls.id, id));
+}
+
+/**
+ * Delete a call
+ */
+export async function deleteCallRecord(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.delete(calls).where(eq(calls.id, id));
+}
+
+/**
+ * Create or update agent session
+ */
+export async function upsertAgentSession(data: InsertAgentSession) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.insert(agentSessions).values(data).onDuplicateKeyUpdate({
+    set: {
+      lastActiveAt: new Date(),
+    },
+  });
+}
+
+/**
+ * Get agent session by session ID
+ */
+export async function getAgentSession(sessionId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(agentSessions).where(eq(agentSessions.sessionId, sessionId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}

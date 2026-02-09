@@ -1,4 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
+import { callsRouter } from "./routers/calls";
+import { agentsRouter } from "./routers/agents";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
@@ -17,12 +19,8 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  calls: callsRouter,
+  agents: agentsRouter,
 });
 
 export type AppRouter = typeof appRouter;

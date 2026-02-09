@@ -25,4 +25,34 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * Agent sessions table for tracking agent logins
+ */
+export const agentSessions = mysqlTable("agent_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  agentName: varchar("agentName", { length: 255 }).notNull(),
+  sessionId: varchar("sessionId", { length: 64 }).notNull().unique(),
+  isAdmin: int("isAdmin").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  lastActiveAt: timestamp("lastActiveAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AgentSession = typeof agentSessions.$inferSelect;
+export type InsertAgentSession = typeof agentSessions.$inferInsert;
+
+/**
+ * Calls table for tracking all patient calls
+ */
+export const calls = mysqlTable("calls", {
+  id: int("id").autoincrement().primaryKey(),
+  patientName: varchar("patientName", { length: 255 }).notNull(),
+  appointmentTime: varchar("appointmentTime", { length: 50 }).notNull(),
+  agentName: varchar("agentName", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["no_answer", "confirmed", "redirected"]).default("no_answer").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Call = typeof calls.$inferSelect;
+export type InsertCall = typeof calls.$inferInsert;
