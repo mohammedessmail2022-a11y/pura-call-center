@@ -58,3 +58,8 @@
 - [x] Add scroller inside patient list cards (ScrollArea already implemented)
 - [x] Clear patient list view on Start a New Day (but keep data in database)
 - [x] Test all features and deploy (all 9 tests passing)
+
+## Phase 5 - Logo & Branding
+- [x] Update favicon and browser tab icon with PURA logo
+- [x] Ensure PURA logo is used consistently throughout the app
+- [x] Update HTML meta tags with PURA branding
