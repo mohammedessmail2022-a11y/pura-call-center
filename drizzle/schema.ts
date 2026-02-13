@@ -46,6 +46,8 @@ export type InsertAgentSession = typeof agentSessions.$inferInsert;
 export const calls = mysqlTable("calls", {
   id: int("id").autoincrement().primaryKey(),
   patientName: varchar("patientName", { length: 255 }).notNull(),
+  appointmentId: varchar("appointmentId", { length: 50 }).notNull(),
+  clinic: varchar("clinic", { length: 255 }).notNull(),
   appointmentTime: varchar("appointmentTime", { length: 50 }).notNull(),
   agentName: varchar("agentName", { length: 255 }).notNull(),
   status: mysqlEnum("status", ["no_answer", "confirmed", "redirected"]).default("no_answer").notNull(),
@@ -56,3 +58,23 @@ export const calls = mysqlTable("calls", {
 
 export type Call = typeof calls.$inferSelect;
 export type InsertCall = typeof calls.$inferInsert;
+
+export const CLINICS = [
+  "SSMC",
+  "Al Neyadat Health Center",
+  "Al Khatim Healthcare Center",
+  "Sweihan Healthcare Center",
+  "Al Hayar Health Center",
+  "Al Maqta Center",
+  "Al Samha Health Center",
+  "Al Rowdha Health Center",
+  "Oud Al Touba Health Center",
+  "Neima Health Center",
+  "Al Towyaa Health Center",
+  "Al Muwaji Health Center",
+  "Sir Baniyas Clinic",
+  "Abu Al Abyad Clinic",
+  "Mohamed Ben Zayed C",
+];
+
+export const ADMIN_NAMES = ["Chandan", "Esmail"];

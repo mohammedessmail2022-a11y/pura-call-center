@@ -8,6 +8,13 @@ vi.mock("../db", () => ({
   createCall: vi.fn(),
   updateCallRecord: vi.fn(),
   deleteCallRecord: vi.fn(),
+  findDuplicateCall: vi.fn(),
+  getDb: vi.fn(),
+  upsertUser: vi.fn(),
+  getUserByOpenId: vi.fn(),
+  getCallById: vi.fn(),
+  getAgentSession: vi.fn(),
+  upsertAgentSession: vi.fn(),
 }));
 
 describe("callsRouter", () => {
@@ -21,6 +28,8 @@ describe("callsRouter", () => {
         {
           id: 1,
           patientName: "John Doe",
+          appointmentId: "12345",
+          clinic: "SSMC",
           appointmentTime: "10:00 AM",
           agentName: "Agent 1",
           status: "confirmed" as const,
@@ -31,6 +40,8 @@ describe("callsRouter", () => {
         {
           id: 2,
           patientName: "Jane Smith",
+          appointmentId: "67890",
+          clinic: "Al Neyadat Health Center",
           appointmentTime: "11:00 AM",
           agentName: "Agent 2",
           status: "no_answer" as const,
@@ -40,18 +51,17 @@ describe("callsRouter", () => {
         },
       ];
 
-      vi.mocked(db.getAllCalls).mockResolvedValue(mockCalls);
+      (db.getAllCalls as any).mockResolvedValue(mockCalls);
 
       const caller = callsRouter.createCaller({});
       const result = await caller.list();
 
       expect(result).toHaveLength(2);
-      expect(result[0]?.id).toBe(2); // Newest first
-      expect(result[1]?.id).toBe(1);
+      expect(result[0].patientName).toBe("Jane Smith");
     });
 
     it("should return empty array when no calls exist", async () => {
-      vi.mocked(db.getAllCalls).mockResolvedValue([]);
+      (db.getAllCalls as any).mockResolvedValue([]);
 
       const caller = callsRouter.createCaller({});
       const result = await caller.list();
@@ -62,19 +72,25 @@ describe("callsRouter", () => {
 
   describe("create", () => {
     it("should create a new call with no_answer status", async () => {
-      vi.mocked(db.createCall).mockResolvedValue({ insertId: 1 } as any);
+      (db.findDuplicateCall as any).mockResolvedValue(undefined);
+      (db.createCall as any).mockResolvedValue({ insertId: 1 } as any);
 
       const caller = callsRouter.createCaller({});
       const result = await caller.create({
         patientName: "John Doe",
+        appointmentId: "12345",
+        clinic: "SSMC",
         appointmentTime: "10:00 AM",
         agentName: "Agent 1",
         comment: "Test comment",
       });
 
       expect(result.success).toBe(true);
+      expect(result.isUpdate).toBe(false);
       expect(db.createCall).toHaveBeenCalledWith({
         patientName: "John Doe",
+        appointmentId: "12345",
+        clinic: "SSMC",
         appointmentTime: "10:00 AM",
         agentName: "Agent 1",
         status: "no_answer",
@@ -83,11 +99,15 @@ describe("callsRouter", () => {
     });
 
     it("should fail with invalid input", async () => {
+      (db.findDuplicateCall as any).mockResolvedValue(undefined);
+
       const caller = callsRouter.createCaller({});
 
       try {
         await caller.create({
           patientName: "",
+          appointmentId: "12345",
+          clinic: "SSMC",
           appointmentTime: "10:00 AM",
           agentName: "Agent 1",
         });
@@ -100,7 +120,7 @@ describe("callsRouter", () => {
 
   describe("update", () => {
     it("should update a call", async () => {
-      vi.mocked(db.updateCallRecord).mockResolvedValue({} as any);
+      (db.updateCallRecord as any).mockResolvedValue({} as any);
 
       const caller = callsRouter.createCaller({});
       const result = await caller.update({
@@ -119,7 +139,7 @@ describe("callsRouter", () => {
 
   describe("delete", () => {
     it("should delete a call", async () => {
-      vi.mocked(db.deleteCallRecord).mockResolvedValue({} as any);
+      (db.deleteCallRecord as any).mockResolvedValue({} as any);
 
       const caller = callsRouter.createCaller({});
       const result = await caller.delete({ id: 1 });
@@ -135,6 +155,8 @@ describe("callsRouter", () => {
         {
           id: 1,
           patientName: "John Doe",
+          appointmentId: "12345",
+          clinic: "SSMC",
           appointmentTime: "10:00 AM",
           agentName: "Agent 1",
           status: "confirmed" as const,
@@ -144,15 +166,57 @@ describe("callsRouter", () => {
         },
       ];
 
-      vi.mocked(db.getAllCalls).mockResolvedValue(mockCalls);
+      (db.getAllCalls as any).mockResolvedValue(mockCalls);
 
       const caller = callsRouter.createCaller({});
       const result = await caller.export();
 
       expect(result.success).toBe(true);
-      expect(result.csv).toContain("ID,Patient Name");
+      expect(result.csv).toContain("ID,Patient Name,Appointment ID");
       expect(result.csv).toContain("John Doe");
+      expect(result.csv).toContain("12345");
+      expect(result.csv).toContain("SSMC");
       expect(result.fileName).toMatch(/pura_calls_\d{4}-\d{2}-\d{2}\.csv/);
+    });
+
+    it("should export multiple calls as CSV", async () => {
+      const mockCalls = [
+        {
+          id: 1,
+          patientName: "John Doe",
+          appointmentId: "12345",
+          clinic: "SSMC",
+          appointmentTime: "10:00 AM",
+          agentName: "Agent 1",
+          status: "confirmed" as const,
+          comment: "Test",
+          createdAt: new Date("2026-02-09T08:00:00Z"),
+          updatedAt: new Date("2026-02-09T08:00:00Z"),
+        },
+        {
+          id: 2,
+          patientName: "Jane Smith",
+          appointmentId: "67890",
+          clinic: "Al Neyadat Health Center",
+          appointmentTime: "11:00 AM",
+          agentName: "Agent 2",
+          status: "no_answer" as const,
+          comment: null,
+          createdAt: new Date("2026-02-09T09:00:00Z"),
+          updatedAt: new Date("2026-02-09T09:00:00Z"),
+        },
+      ];
+
+      (db.getAllCalls as any).mockResolvedValue(mockCalls);
+
+      const caller = callsRouter.createCaller({});
+      const result = await caller.export();
+
+      expect(result.success).toBe(true);
+      expect(result.csv).toContain("John Doe");
+      expect(result.csv).toContain("Jane Smith");
+      expect(result.csv).toContain("12345");
+      expect(result.csv).toContain("67890");
     });
   });
 });

@@ -15,6 +15,13 @@
       "when": 1770617814750,
       "tag": "0001_eager_tyrannus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1771005485785,
+      "tag": "0002_wise_whiplash",
+      "breakpoints": true
     }
   ]
 }

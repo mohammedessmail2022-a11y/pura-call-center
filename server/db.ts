@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { InsertCall, Call, agentSessions, calls, InsertAgentSession } from "../drizzle/schema";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users } from "../drizzle/schema";
@@ -157,5 +157,25 @@ export async function getAgentSession(sessionId: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(agentSessions).where(eq(agentSessions.sessionId, sessionId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Find a duplicate call by patient name, appointment ID, and clinic
+ */
+export async function findDuplicateCall(patientName: string, appointmentId: string, clinic: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(calls)
+    .where(
+      and(
+        eq(calls.patientName, patientName),
+        eq(calls.appointmentId, appointmentId),
+        eq(calls.clinic, clinic)
+      )
+    )
+    .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }

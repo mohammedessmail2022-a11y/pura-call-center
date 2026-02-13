@@ -23,9 +23,22 @@
 - [x] Agent attribution (show which agent called which patient)
 - [x] All agents can view all patients
 
+## New Requirements - Phase 2
+- [x] Add clinic field with dropdown list (15 clinics)
+- [x] Add Appointment ID field (numeric)
+- [x] Update duplicate records instead of creating new ones
+- [x] Add search functionality in Patient List (by name, ID, clinic, time)
+- [x] Add scrolling in Patient List with horizontal time display
+- [x] Build Admin Dashboard with agent statistics
+- [x] Add "Start a New Day" button for all users
+- [x] Remove "Demo Mode" text from login
+- [x] Restrict Admin access to only "Chandan" and "Esmail"
+- [x] Display appointment times in horizontal format (e.g., 5 meters)
+
 ## Testing & Deployment
 - [x] Test all features end-to-end
 - [x] Verify database persistence across sessions
 - [x] Test multi-agent scenarios
+- [x] Unit tests for all procedures (9 tests passing)
 - [ ] Create production checkpoint
 - [ ] Deploy to production with permanent URL
