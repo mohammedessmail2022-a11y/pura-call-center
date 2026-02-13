@@ -155,10 +155,11 @@ export default function Home() {
 
   const handleStartNewDay = async () => {
     try {
-      await refreshCalls();
-      toast.success("Data refreshed");
+      // Clear the search query to hide all patients from view
+      setSearchQuery("__CLEARED__");
+      toast.success("Patient list cleared. Data is still saved.");
     } catch (error) {
-      toast.error("Failed to refresh data");
+      toast.error("Failed to clear list");
     }
   };
 
@@ -220,6 +221,8 @@ export default function Home() {
 
   // Filter calls based on search query
   const filteredCalls = useMemo(() => {
+    // If search query is "__CLEARED__", return empty array (for Start New Day)
+    if (searchQuery === "__CLEARED__") return [];
     if (!searchQuery.trim()) return calls;
     const query = searchQuery.toLowerCase();
     return calls.filter(
@@ -713,7 +716,7 @@ export default function Home() {
               <Input
                 type="text"
                 placeholder="Search by name, ID, clinic, or time..."
-                value={searchQuery}
+                value={searchQuery === "__CLEARED__" ? "" : searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 pl-10 text-sm"
               />

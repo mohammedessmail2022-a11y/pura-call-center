@@ -53,3 +53,8 @@
 - [x] Add search functionality in clinic dropdown (searchable popover)
 - [x] Move Comments & Call Status to popup modal (Dialog component)
 - [ ] Set up permanent hosting and deploy
+
+## Phase 4 - Final Adjustments
+- [x] Add scroller inside patient list cards (ScrollArea already implemented)
+- [x] Clear patient list view on Start a New Day (but keep data in database)
+- [x] Test all features and deploy (all 9 tests passing)
