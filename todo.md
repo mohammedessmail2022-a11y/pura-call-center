@@ -42,3 +42,14 @@
 - [x] Unit tests for all procedures (9 tests passing)
 - [ ] Create production checkpoint
 - [ ] Deploy to production with permanent URL
+
+
+## Phase 3 - Final Refinements
+- [x] Add scroller in patient list (ScrollArea with overflow handling)
+- [x] Reduce item size in patient list to show more than 5 patients (text-xs, compact spacing)
+- [x] Show hidden error message for non-admin login attempts
+- [x] Move "Start a New Day" button to top-right (Start New Day button in header)
+- [x] Add total statistics to Admin Dashboard (total appointments, confirmed, no answer, redirected)
+- [x] Add search functionality in clinic dropdown (searchable popover)
+- [x] Move Comments & Call Status to popup modal (Dialog component)
+- [ ] Set up permanent hosting and deploy

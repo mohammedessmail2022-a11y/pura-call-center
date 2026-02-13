@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Clock, Phone, Save, X, Download, LogOut, Lock, Search, BarChart3, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +21,7 @@ export default function Home() {
   // Login form state
   const [agentName, setAgentName] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminError, setAdminError] = useState("");
 
   // Calling form state
   const [patientName, setPatientName] = useState("");
@@ -34,6 +36,8 @@ export default function Home() {
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [clinicSearch, setClinicSearch] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +51,8 @@ export default function Home() {
     const isValidAdmin = ADMIN_NAMES.includes(agentName);
 
     if (requestedAdmin && !isValidAdmin) {
-      toast.error("Only Chandan and Esmail can access Admin mode");
+      setAdminError("Invalid admin credentials");
+      setIsAdmin(false);
       return;
     }
 
@@ -56,6 +61,7 @@ export default function Home() {
       toast.success(`Welcome, ${agentName}!`);
       setAgentName("");
       setIsAdmin(false);
+      setAdminError("");
     } catch (error) {
       toast.error("Login failed");
     }
@@ -109,6 +115,7 @@ export default function Home() {
         setComment("");
         setSelectedStatus(null);
         setIsInProgress(false);
+        setShowCommentModal(false);
 
         toast.success("Call saved successfully");
       }
@@ -125,6 +132,7 @@ export default function Home() {
     setComment("");
     setSelectedStatus(null);
     setIsInProgress(false);
+    setShowCommentModal(false);
   };
 
   const handleDownloadData = async () => {
@@ -223,6 +231,12 @@ export default function Home() {
     );
   }, [calls, searchQuery]);
 
+  // Filter clinics based on search
+  const filteredClinics = useMemo(() => {
+    if (!clinicSearch.trim()) return CLINICS;
+    return CLINICS.filter((c) => c.toLowerCase().includes(clinicSearch.toLowerCase()));
+  }, [clinicSearch]);
+
   // Calculate agent statistics
   const agentStats = useMemo(() => {
     const stats: Record<string, { total: number; confirmed: number; noAnswer: number; redirected: number }> = {};
@@ -236,6 +250,16 @@ export default function Home() {
       if (call.status === "redirected") stats[call.agentName].redirected++;
     });
     return stats;
+  }, [calls]);
+
+  // Calculate total statistics
+  const totalStats = useMemo(() => {
+    return {
+      total: calls.length,
+      confirmed: calls.filter((c) => c.status === "confirmed").length,
+      noAnswer: calls.filter((c) => c.status === "no_answer").length,
+      redirected: calls.filter((c) => c.status === "redirected").length,
+    };
   }, [calls]);
 
   // Login screen
@@ -272,13 +296,18 @@ export default function Home() {
                 type="checkbox"
                 id="admin"
                 checked={isAdmin}
-                onChange={(e) => setIsAdmin(e.target.checked)}
+                onChange={(e) => {
+                  setIsAdmin(e.target.checked);
+                  setAdminError("");
+                }}
                 className="w-4 h-4 rounded border-slate-600 bg-slate-700"
               />
               <label htmlFor="admin" className="text-sm text-slate-300 flex items-center gap-2">
                 <Lock size={14} /> Admin Mode
               </label>
             </div>
+
+            {adminError && <p className="text-xs text-red-400">{adminError}</p>}
 
             <Button
               type="submit"
@@ -316,6 +345,26 @@ export default function Home() {
               Logout
             </Button>
           </div>
+        </div>
+
+        {/* Total Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card className="bg-slate-800 border-slate-700 p-4">
+            <p className="text-slate-400 text-sm mb-1">Total Appointments</p>
+            <p className="text-3xl font-bold text-cyan-400">{totalStats.total}</p>
+          </Card>
+          <Card className="bg-slate-800 border-slate-700 p-4">
+            <p className="text-slate-400 text-sm mb-1">Confirmed</p>
+            <p className="text-3xl font-bold text-green-400">{totalStats.confirmed}</p>
+          </Card>
+          <Card className="bg-slate-800 border-slate-700 p-4">
+            <p className="text-slate-400 text-sm mb-1">No Answer</p>
+            <p className="text-3xl font-bold text-red-400">{totalStats.noAnswer}</p>
+          </Card>
+          <Card className="bg-slate-800 border-slate-700 p-4">
+            <p className="text-slate-400 text-sm mb-1">Redirected</p>
+            <p className="text-3xl font-bold text-orange-400">{totalStats.redirected}</p>
+          </Card>
         </div>
 
         {/* Agent Statistics */}
@@ -357,14 +406,14 @@ export default function Home() {
         <Card className="bg-slate-800 border-slate-700 p-6">
           <h3 className="text-lg font-bold text-cyan-400 mb-4">All Calls</h3>
           <ScrollArea className="h-[400px]">
-            <div className="space-y-3 pr-4">
+            <div className="space-y-2 pr-4">
               {calls.length === 0 ? (
                 <p className="text-center text-slate-400 py-8">No calls yet</p>
               ) : (
                 calls.map((call) => (
                   <Card
                     key={call.id}
-                    className={`bg-slate-700 border p-3 cursor-pointer hover:bg-slate-600 transition-colors ${
+                    className={`bg-slate-700 border p-2 cursor-pointer hover:bg-slate-600 transition-colors text-sm ${
                       call.status === "confirmed"
                         ? "border-green-500/50"
                         : call.status === "no_answer"
@@ -372,7 +421,7 @@ export default function Home() {
                           : "border-orange-500/50"
                     }`}
                   >
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="font-semibold text-white">{call.patientName}</p>
@@ -398,12 +447,12 @@ export default function Home() {
                       <p className="text-xs text-slate-400">Agent: {call.agentName}</p>
                       <p className="text-xs text-slate-400">{call.appointmentTime}</p>
                       {call.comment && <p className="text-xs text-slate-300">{call.comment}</p>}
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex gap-2 mt-1">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleEditCall(call.id)}
-                          className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-500 text-xs"
+                          className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-500 text-xs h-7"
                         >
                           Edit
                         </Button>
@@ -411,7 +460,7 @@ export default function Home() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDeleteCall(call.id)}
-                          className="flex-1 border-red-600/50 text-red-400 hover:bg-red-900/30 text-xs"
+                          className="flex-1 border-red-600/50 text-red-400 hover:bg-red-900/30 text-xs h-7"
                         >
                           Delete
                         </Button>
@@ -437,6 +486,14 @@ export default function Home() {
           <h1 className="text-2xl font-bold text-cyan-400">PURA Call Center</h1>
         </div>
         <div className="flex items-center gap-4">
+          <Button
+            onClick={handleStartNewDay}
+            variant="outline"
+            className="border-cyan-600 text-cyan-400 hover:bg-cyan-900/30"
+          >
+            <RefreshCw size={16} className="mr-2" />
+            Start New Day
+          </Button>
           <div className="text-right">
             <p className="text-sm text-slate-400">Agent</p>
             <p className="font-semibold text-white">{currentAgent.agentName}</p>
@@ -503,18 +560,44 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-200 mb-2">Clinic</label>
-                <Select value={clinic} onValueChange={setClinic} disabled={isInProgress}>
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                    <SelectValue placeholder="Select clinic" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
-                    {CLINICS.map((clinicName: string) => (
-                      <SelectItem key={clinicName} value={clinicName} className="text-white">
-                        {clinicName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={isInProgress}
+                      className="w-full justify-start text-left font-normal bg-slate-700 border-slate-600 text-white hover:bg-slate-600"
+                    >
+                      {clinic || "Select clinic"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0 bg-slate-800 border-slate-700" align="start">
+                    <div className="p-2">
+                      <Input
+                        type="text"
+                        placeholder="Search clinic..."
+                        value={clinicSearch}
+                        onChange={(e) => setClinicSearch(e.target.value)}
+                        className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 mb-2"
+                      />
+                      <ScrollArea className="h-[200px]">
+                        <div className="space-y-1 pr-4">
+                          {filteredClinics.map((c) => (
+                            <button
+                              key={c}
+                              onClick={() => {
+                                setClinic(c);
+                                setClinicSearch("");
+                              }}
+                              className="w-full text-left px-2 py-1 rounded text-sm text-slate-200 hover:bg-slate-700"
+                            >
+                              {c}
+                            </button>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-200 mb-2">Appointment Time</label>
@@ -546,25 +629,15 @@ export default function Home() {
             </Button>
           </Card>
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={handleDownloadData}
-              variant="outline"
-              className="border-slate-600 text-slate-300 hover:bg-slate-700 py-3 font-semibold flex items-center justify-center gap-2"
-            >
-              <Download size={18} />
-              Download Data
-            </Button>
-            <Button
-              onClick={handleStartNewDay}
-              variant="outline"
-              className="border-slate-600 text-slate-300 hover:bg-slate-700 py-3 font-semibold flex items-center justify-center gap-2"
-            >
-              <RefreshCw size={18} />
-              Start New Day
-            </Button>
-          </div>
+          {/* Download Button */}
+          <Button
+            onClick={handleDownloadData}
+            variant="outline"
+            className="w-full border-slate-600 text-slate-300 hover:bg-slate-700 py-3 font-semibold flex items-center justify-center gap-2"
+          >
+            <Download size={18} />
+            Download Data
+          </Button>
 
           {/* Status Buttons */}
           {isInProgress && (
@@ -573,7 +646,7 @@ export default function Home() {
               <div className="grid grid-cols-3 gap-3">
                 <button
                   onClick={() => setSelectedStatus(selectedStatus === "no_answer" ? null : "no_answer")}
-                  className={`py-3 px-4 rounded-lg font-semibold transition-all duration-200 border ${
+                  className={`py-3 px-4 rounded-lg font-semibold transition-all duration-200 border text-sm ${
                     selectedStatus === "no_answer"
                       ? "bg-red-900/50 border-red-500 text-red-400"
                       : "bg-red-900/20 border-red-500/30 text-red-400 hover:bg-red-900/30"
@@ -584,7 +657,7 @@ export default function Home() {
 
                 <button
                   onClick={() => setSelectedStatus(selectedStatus === "confirmed" ? null : "confirmed")}
-                  className={`py-3 px-4 rounded-lg font-semibold transition-all duration-200 border ${
+                  className={`py-3 px-4 rounded-lg font-semibold transition-all duration-200 border text-sm ${
                     selectedStatus === "confirmed"
                       ? "bg-green-900/50 border-green-500 text-green-400"
                       : "bg-green-900/20 border-green-500/30 text-green-400 hover:bg-green-900/30"
@@ -595,7 +668,7 @@ export default function Home() {
 
                 <button
                   onClick={() => setSelectedStatus(selectedStatus === "redirected" ? null : "redirected")}
-                  className={`py-3 px-4 rounded-lg font-semibold transition-all duration-200 border ${
+                  className={`py-3 px-4 rounded-lg font-semibold transition-all duration-200 border text-sm ${
                     selectedStatus === "redirected"
                       ? "bg-orange-900/50 border-orange-500 text-orange-400"
                       : "bg-orange-900/20 border-orange-500/30 text-orange-400 hover:bg-orange-900/30"
@@ -607,24 +680,11 @@ export default function Home() {
             </Card>
           )}
 
-          {/* Comment Box */}
-          {isInProgress && (
-            <Card className="bg-slate-800 border-slate-700 p-6 space-y-4">
-              <label className="block text-sm font-semibold text-slate-200 uppercase tracking-wide">Comments</label>
-              <Textarea
-                placeholder="Add any notes about this call..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 min-h-[100px]"
-              />
-            </Card>
-          )}
-
           {/* Save/Cancel Buttons */}
           {isInProgress && (
             <div className="flex gap-3">
               <Button
-                onClick={handleSaveCall}
+                onClick={() => setShowCommentModal(true)}
                 className="flex-1 bg-cyan-600 text-white hover:bg-cyan-700 py-3 font-semibold flex items-center justify-center gap-2"
               >
                 <Save size={18} />
@@ -655,22 +715,22 @@ export default function Home() {
                 placeholder="Search by name, ID, clinic, or time..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 pl-10"
+                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 pl-10 text-sm"
               />
             </div>
 
             {/* Patient List with Scrolling */}
             <ScrollArea className="flex-1">
-              <div className="space-y-3 pr-4">
+              <div className="space-y-2 pr-4">
                 {filteredCalls.length === 0 ? (
-                  <p className="text-center text-slate-400 py-8">
+                  <p className="text-center text-slate-400 py-8 text-sm">
                     {searchQuery ? "No patients found" : "No calls yet"}
                   </p>
                 ) : (
                   filteredCalls.map((call) => (
                     <Card
                       key={call.id}
-                      className={`bg-slate-700 border p-3 cursor-pointer hover:bg-slate-600 transition-colors ${
+                      className={`bg-slate-700 border p-2 cursor-pointer hover:bg-slate-600 transition-colors text-xs ${
                         call.status === "confirmed"
                           ? "border-green-500/50"
                           : call.status === "no_answer"
@@ -678,15 +738,15 @@ export default function Home() {
                             : "border-orange-500/50"
                       }`}
                     >
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <p className="font-semibold text-white">{call.patientName}</p>
+                            <p className="font-semibold text-white text-sm">{call.patientName}</p>
                             <p className="text-xs text-slate-400">ID: {call.appointmentId}</p>
                             <p className="text-xs text-slate-400">{call.clinic}</p>
                           </div>
                           <span
-                            className={`text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ml-2 ${
+                            className={`text-xs font-semibold px-1.5 py-0.5 rounded whitespace-nowrap ml-2 ${
                               call.status === "confirmed"
                                 ? "bg-green-900/50 text-green-400"
                                 : call.status === "no_answer"
@@ -706,12 +766,12 @@ export default function Home() {
                         </p>
                         {call.comment && <p className="text-xs text-slate-300 italic">{call.comment}</p>}
                         {currentAgent.isAdmin && (
-                          <div className="flex gap-2 mt-2">
+                          <div className="flex gap-1 mt-1">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleEditCall(call.id)}
-                              className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-500 text-xs"
+                              className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-500 text-xs h-6"
                             >
                               Edit
                             </Button>
@@ -719,7 +779,7 @@ export default function Home() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleDeleteCall(call.id)}
-                              className="flex-1 border-red-600/50 text-red-400 hover:bg-red-900/30 text-xs"
+                              className="flex-1 border-red-600/50 text-red-400 hover:bg-red-900/30 text-xs h-6"
                             >
                               Delete
                             </Button>
@@ -734,6 +794,41 @@ export default function Home() {
           </Card>
         </div>
       </div>
+
+      {/* Comment Modal */}
+      <Dialog open={showCommentModal} onOpenChange={setShowCommentModal}>
+        <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-cyan-400">Comments & Call Status</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-200 mb-2">Comments (Optional)</label>
+              <Textarea
+                placeholder="Add any notes about this call..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 min-h-[100px] text-sm"
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleSaveCall}
+                className="flex-1 bg-cyan-600 text-white hover:bg-cyan-700 py-2 font-semibold"
+              >
+                Save Call
+              </Button>
+              <Button
+                onClick={() => setShowCommentModal(false)}
+                variant="outline"
+                className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700 py-2 font-semibold"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
