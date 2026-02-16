@@ -31,7 +31,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [calls, setCalls] = useState<Call[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const listQuery = trpc.calls.list.useQuery(undefined, {
+  const listQuery = trpc.calls.listActive.useQuery(undefined, {
     refetchInterval: 2000, // Refetch every 2 seconds for real-time updates
   });
 
