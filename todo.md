@@ -70,3 +70,9 @@
 - [x] Fix Start a New Day - now only clears view, data remains in database
 - [x] Fix data reappearing issue (proper filter logic with __CLEARED__ state)
 - [x] Fix UI hanging/freezing issues (proper component nesting)
+
+
+## Critical Fixes - Phase 7
+- [x] Add scroller in patient list - fixed height for 5 patients with scrolling capability
+- [ ] Implement Start a New Day to permanently delete all patients from list
+- [ ] Ensure search only works on current patients in list (no restoration of old data)
