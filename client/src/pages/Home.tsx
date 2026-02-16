@@ -729,8 +729,8 @@ export default function Home() {
             </div>
 
             {/* Patient List with Scrolling - Fixed height for 5 patients */}
-            <div className="h-[calc(100vh-350px)] overflow-hidden flex flex-col min-h-0">
-              <ScrollArea className="flex-1 w-full border border-slate-600 rounded">
+            <div className="border border-slate-600 rounded overflow-hidden" style={{ maxHeight: "400px" }}>
+              <ScrollArea className="w-full h-full">
                 <div className="space-y-2 p-4">
                   {filteredCalls.length === 0 ? (
                     <p className="text-center text-slate-400 py-8 text-sm">
