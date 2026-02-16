@@ -52,6 +52,7 @@ export const calls = mysqlTable("calls", {
   agentName: varchar("agentName", { length: 255 }).notNull(),
   status: mysqlEnum("status", ["no_answer", "confirmed", "redirected"]).default("no_answer").notNull(),
   comment: text("comment"),
+  isActive: int("isActive").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

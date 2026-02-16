@@ -16,7 +16,7 @@ import { CLINICS, ADMIN_NAMES } from "../../../shared/constants";
 
 export default function Home() {
   const { currentAgent, login, logout, isLoading: authLoading } = useAgent();
-  const { calls, addCall, updateCall, deleteCall, exportCalls, refreshCalls, isLoading: callsLoading } = useCall();
+  const { calls, addCall, updateCall, deleteCall, exportCalls, refreshCalls, startNewDay, isLoading: callsLoading } = useCall();
 
   // Login form state
   const [agentName, setAgentName] = useState("");
@@ -155,9 +155,7 @@ export default function Home() {
 
   const handleStartNewDay = async () => {
     try {
-      // Clear the search query to hide all patients from view (UI only)
-      // Data remains in database and will show again when search is cleared
-      setSearchQuery("__CLEARED__");
+      await startNewDay();
       setPatientName("");
       setAppointmentId("");
       setClinic("");
@@ -165,9 +163,9 @@ export default function Home() {
       setComment("");
       setSelectedStatus(null);
       setIsInProgress(false);
-      toast.success("Patient list cleared. Data is still saved.");
+      toast.success("New day started - patient list cleared.");
     } catch (error) {
-      toast.error("Failed to clear list");
+      toast.error("Failed to start new day");
     }
   };
 

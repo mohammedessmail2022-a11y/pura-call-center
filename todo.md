@@ -74,5 +74,7 @@
 
 ## Critical Fixes - Phase 7
 - [x] Add scroller in patient list - fixed height for 5 patients with scrolling capability
-- [ ] Implement Start a New Day to permanently delete all patients from list
-- [ ] Ensure search only works on current patients in list (no restoration of old data)
+- [x] Add isActive field to calls table to track active patients for current day
+- [x] Implement Start a New Day to set all patients isActive=false (UI clears, DB keeps data)
+- [x] Update search to only show patients where isActive=true
+- [x] New patients added after Start a New Day should have isActive=true

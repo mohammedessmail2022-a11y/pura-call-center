@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import { getAllCalls, createCall, updateCallRecord, deleteCallRecord, findDuplicateCall } from "../db";
+import { getAllCalls, createCall, updateCallRecord, deleteCallRecord, findDuplicateCall, deactivateAllCalls, getActiveCalls } from "../db";
 import { TRPCError } from "@trpc/server";
 
 export const callsRouter = router({
@@ -156,6 +156,39 @@ export const callsRouter = router({
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to export calls",
+      });
+    }
+  }),
+
+  /**
+   * Start a new day - deactivate all current calls
+   */
+  startNewDay: publicProcedure.mutation(async () => {
+    try {
+      await deactivateAllCalls();
+      return { success: true, message: "New day started - all patients cleared from view" };
+    } catch (error) {
+      console.error("Failed to start new day:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to start new day",
+      });
+    }
+  }),
+
+  /**
+   * Get only active calls for current day
+   */
+  listActive: publicProcedure.query(async () => {
+    try {
+      const activeCalls = await getActiveCalls();
+      // Sort by newest first
+      return activeCalls.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } catch (error) {
+      console.error("Failed to fetch active calls:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch active calls",
       });
     }
   }),

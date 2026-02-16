@@ -20,8 +20,9 @@ interface CallContextType {
   addCall: (call: { patientName: string; appointmentId: string; clinic: string; appointmentTime: string; agentName: string; comment?: string | null }) => Promise<void>;
   updateCall: (id: number, updates: Partial<Call>) => Promise<void>;
   deleteCall: (id: number) => Promise<void>;
-  exportCalls: () => Promise<{ csv: string; fileName: string }>;  
+  exportCalls: () => Promise<{ csv: string; fileName: string }>;
   refreshCalls: () => Promise<void>;
+  startNewDay: () => Promise<void>;
 }
 
 const CallContext = createContext<CallContextType | undefined>(undefined);
@@ -37,6 +38,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const createMutation = trpc.calls.create.useMutation();
   const updateMutation = trpc.calls.update.useMutation();
   const deleteMutation = trpc.calls.delete.useMutation();
+  const startNewDayMutation = trpc.calls.startNewDay.useMutation();
   const exportQuery = trpc.calls.export.useQuery();
 
   // Update calls when query data changes
@@ -112,8 +114,19 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await listQuery.refetch();
   };
 
+  const startNewDay = async () => {
+    setIsLoading(true);
+    try {
+      await startNewDayMutation.mutateAsync();
+      // Refetch calls after starting new day
+      await listQuery.refetch();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <CallContext.Provider value={{ calls, isLoading, addCall, updateCall, deleteCall, exportCalls, refreshCalls }}>
+    <CallContext.Provider value={{ calls, isLoading, addCall, updateCall, deleteCall, exportCalls, refreshCalls, startNewDay }}>
       {children}
     </CallContext.Provider>
   );

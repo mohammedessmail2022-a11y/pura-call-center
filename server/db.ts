@@ -179,3 +179,23 @@ export async function findDuplicateCall(patientName: string, appointmentId: stri
     .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
+
+
+/**
+ * Deactivate all calls (for Start a New Day)
+ */
+export async function deactivateAllCalls() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.update(calls).set({ isActive: 0 });
+}
+
+/**
+ * Get only active calls
+ */
+export async function getActiveCalls() {
+  const db = await getDb();
+  if (!db) return [];
+  const { eq } = await import("drizzle-orm");
+  return await db.select().from(calls).where(eq(calls.isActive, 1)).orderBy((c) => c.createdAt) || [];
+}
