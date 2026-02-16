@@ -63,3 +63,10 @@
 - [x] Update favicon and browser tab icon with PURA logo
 - [x] Ensure PURA logo is used consistently throughout the app
 - [x] Update HTML meta tags with PURA branding
+
+
+## Bug Fixes - Phase 6
+- [x] Fix missing scroller in All Patients list (ScrollArea properly nested in flex container)
+- [x] Fix Start a New Day - now only clears view, data remains in database
+- [x] Fix data reappearing issue (proper filter logic with __CLEARED__ state)
+- [x] Fix UI hanging/freezing issues (proper component nesting)

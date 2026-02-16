@@ -155,8 +155,16 @@ export default function Home() {
 
   const handleStartNewDay = async () => {
     try {
-      // Clear the search query to hide all patients from view
+      // Clear the search query to hide all patients from view (UI only)
+      // Data remains in database and will show again when search is cleared
       setSearchQuery("__CLEARED__");
+      setPatientName("");
+      setAppointmentId("");
+      setClinic("");
+      setAppointmentTime("12:00");
+      setComment("");
+      setSelectedStatus(null);
+      setIsInProgress(false);
       toast.success("Patient list cleared. Data is still saved.");
     } catch (error) {
       toast.error("Failed to clear list");
@@ -723,14 +731,15 @@ export default function Home() {
             </div>
 
             {/* Patient List with Scrolling */}
-            <ScrollArea className="flex-1">
-              <div className="space-y-2 pr-4">
-                {filteredCalls.length === 0 ? (
-                  <p className="text-center text-slate-400 py-8 text-sm">
-                    {searchQuery ? "No patients found" : "No calls yet"}
-                  </p>
-                ) : (
-                  filteredCalls.map((call) => (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <ScrollArea className="flex-1 w-full">
+                <div className="space-y-2 pr-4">
+                  {filteredCalls.length === 0 ? (
+                    <p className="text-center text-slate-400 py-8 text-sm">
+                      {searchQuery === "__CLEARED__" ? "Patient list cleared. Data is saved." : searchQuery ? "No patients found" : "No calls yet"}
+                    </p>
+                  ) : (
+                    filteredCalls.map((call) => (
                     <Card
                       key={call.id}
                       className={`bg-slate-700 border p-2 cursor-pointer hover:bg-slate-600 transition-colors text-xs ${
@@ -792,8 +801,9 @@ export default function Home() {
                     </Card>
                   ))
                 )}
-              </div>
-            </ScrollArea>
+                </div>
+              </ScrollArea>
+            </div>
           </Card>
         </div>
       </div>
