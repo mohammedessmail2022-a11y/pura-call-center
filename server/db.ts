@@ -161,9 +161,9 @@ export async function getAgentSession(sessionId: string) {
 }
 
 /**
- * Find a duplicate call by patient name, appointment ID, and clinic
+ * Find a duplicate call by patient name and appointment ID
  */
-export async function findDuplicateCall(patientName: string, appointmentId: string, clinic: string) {
+export async function findDuplicateCall(patientName: string, appointmentId: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db
@@ -172,8 +172,7 @@ export async function findDuplicateCall(patientName: string, appointmentId: stri
     .where(
       and(
         eq(calls.patientName, patientName),
-        eq(calls.appointmentId, appointmentId),
-        eq(calls.clinic, clinic)
+        eq(calls.appointmentId, appointmentId)
       )
     )
     .limit(1);

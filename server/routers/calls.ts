@@ -29,7 +29,6 @@ export const callsRouter = router({
       z.object({
         patientName: z.string().min(1, "Patient name is required"),
         appointmentId: z.string().min(1, "Appointment ID is required"),
-        clinic: z.string().min(1, "Clinic is required"),
         appointmentTime: z.string().min(1, "Appointment time is required"),
         agentName: z.string().min(1, "Agent name is required"),
         comment: z.string().optional().default(""),
@@ -37,32 +36,32 @@ export const callsRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
-        // Check if a call with same patient, appointment ID, and clinic already exists
+        // Check if a call with same patient and appointment ID already exists
         const existingCall = await findDuplicateCall(
           input.patientName,
-          input.appointmentId,
-          input.clinic
+          input.appointmentId
         );
 
         if (existingCall) {
-          // Update existing call instead of creating new one
+          // Update existing call and increment numberOfTrials
           await updateCallRecord(existingCall.id, {
             appointmentTime: input.appointmentTime,
             agentName: input.agentName,
             status: "no_answer",
             comment: input.comment,
+            numberOfTrials: (existingCall.numberOfTrials || 1) + 1,
           });
           return { success: true, message: "Call updated successfully", isUpdate: true };
         } else {
-          // Create new call
+          // Create new call with numberOfTrials = 1
           const result = await createCall({
             patientName: input.patientName,
             appointmentId: input.appointmentId,
-            clinic: input.clinic,
             appointmentTime: input.appointmentTime,
             agentName: input.agentName,
             status: "no_answer",
             comment: input.comment,
+            numberOfTrials: 1,
           });
           return { success: true, message: "Call created successfully", isUpdate: false };
         }
@@ -84,11 +83,11 @@ export const callsRouter = router({
         id: z.number(),
         patientName: z.string().optional(),
         appointmentId: z.string().optional(),
-        clinic: z.string().optional(),
         appointmentTime: z.string().optional(),
         agentName: z.string().optional(),
         status: z.enum(["no_answer", "confirmed", "redirected"]).optional(),
         comment: z.string().optional(),
+        numberOfTrials: z.number().optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -131,15 +130,15 @@ export const callsRouter = router({
       const allCalls = await getAllCalls();
       
       // Generate CSV content
-      const headers = ["ID", "Patient Name", "Appointment ID", "Clinic", "Appointment Time", "Agent Name", "Status", "Comment", "Created At"];
+      const headers = ["ID", "Patient Name", "Appointment ID", "Appointment Time", "Agent Name", "Status", "Number of Trials", "Comment", "Created At"];
       const rows = allCalls.map((call) => [
         call.id.toString(),
         `"${call.patientName}"`,
         `"${call.appointmentId}"`,
-        `"${call.clinic}"`,
         `"${call.appointmentTime}"`,
         `"${call.agentName}"`,
         call.status,
+        call.numberOfTrials.toString(),
         `"${(call.comment || "").replace(/"/g, '""')}"`,
         new Date(call.createdAt).toISOString(),
       ]);

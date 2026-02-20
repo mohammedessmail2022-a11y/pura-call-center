@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TimePicker from "@/components/TimePicker";
-import { CLINICS, ADMIN_NAMES } from "../../../shared/constants";
+import { ADMIN_NAMES } from "../../../shared/constants";
 
 export default function Home() {
   const { currentAgent, login, logout, isLoading: authLoading } = useAgent();
@@ -26,7 +26,6 @@ export default function Home() {
   // Calling form state
   const [patientName, setPatientName] = useState("");
   const [appointmentId, setAppointmentId] = useState("");
-  const [clinic, setClinic] = useState("");
   const [appointmentTime, setAppointmentTime] = useState("12:00");
   const [comment, setComment] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<"no_answer" | "confirmed" | "redirected" | null>(null);
@@ -37,7 +36,6 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [showCommentModal, setShowCommentModal] = useState(false);
-  const [clinicSearch, setClinicSearch] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +66,7 @@ export default function Home() {
   };
 
   const handleStartCall = async () => {
-    if (!patientName.trim() || !appointmentId.trim() || !clinic || !appointmentTime.trim()) {
+    if (!patientName.trim() || !appointmentId.trim() || !appointmentTime.trim()) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -82,7 +80,6 @@ export default function Home() {
       await addCall({
         patientName,
         appointmentId,
-        clinic,
         appointmentTime,
         agentName: currentAgent.agentName,
         comment: "",
@@ -110,7 +107,6 @@ export default function Home() {
 
         setPatientName("");
         setAppointmentId("");
-        setClinic("");
         setAppointmentTime("12:00");
         setComment("");
         setSelectedStatus(null);
@@ -127,7 +123,6 @@ export default function Home() {
   const handleCancelCall = () => {
     setPatientName("");
     setAppointmentId("");
-    setClinic("");
     setAppointmentTime("12:00");
     setComment("");
     setSelectedStatus(null);
@@ -158,7 +153,6 @@ export default function Home() {
       await startNewDay();
       setPatientName("");
       setAppointmentId("");
-      setClinic("");
       setAppointmentTime("12:00");
       setComment("");
       setSelectedStatus(null);
@@ -194,7 +188,6 @@ export default function Home() {
       setEditingId(id);
       setPatientName(call.patientName);
       setAppointmentId(call.appointmentId);
-      setClinic(call.clinic);
       setAppointmentTime(call.appointmentTime);
       setComment(call.comment || "");
       setSelectedStatus(call.status);
@@ -207,7 +200,6 @@ export default function Home() {
       await updateCall(editingId, {
         patientName,
         appointmentId,
-        clinic,
         appointmentTime,
         comment,
         status: selectedStatus || "no_answer",
@@ -215,7 +207,6 @@ export default function Home() {
       setEditingId(null);
       setPatientName("");
       setAppointmentId("");
-      setClinic("");
       setAppointmentTime("12:00");
       setComment("");
       setSelectedStatus(null);
@@ -235,16 +226,9 @@ export default function Home() {
       (call) =>
         call.patientName.toLowerCase().includes(query) ||
         call.appointmentId.toLowerCase().includes(query) ||
-        call.clinic.toLowerCase().includes(query) ||
         call.appointmentTime.toLowerCase().includes(query)
     );
   }, [calls, searchQuery]);
-
-  // Filter clinics based on search
-  const filteredClinics = useMemo(() => {
-    if (!clinicSearch.trim()) return CLINICS;
-    return CLINICS.filter((c) => c.toLowerCase().includes(clinicSearch.toLowerCase()));
-  }, [clinicSearch]);
 
   // Calculate agent statistics
   const agentStats = useMemo(() => {
@@ -305,24 +289,19 @@ export default function Home() {
                 type="checkbox"
                 id="admin"
                 checked={isAdmin}
-                onChange={(e) => {
-                  setIsAdmin(e.target.checked);
-                  setAdminError("");
-                }}
-                className="w-4 h-4 rounded border-slate-600 bg-slate-700"
+                onChange={(e) => setIsAdmin(e.target.checked)}
+                disabled={authLoading}
+                className="rounded border-slate-600"
               />
-              <label htmlFor="admin" className="text-sm text-slate-300 flex items-center gap-2">
-                <Lock size={14} /> Admin Mode
+              <label htmlFor="admin" className="text-sm text-slate-200 cursor-pointer flex items-center gap-1">
+                <Lock size={14} />
+                Admin Access
               </label>
             </div>
 
             {adminError && <p className="text-xs text-red-400">{adminError}</p>}
 
-            <Button
-              type="submit"
-              disabled={authLoading || !agentName.trim()}
-              className="w-full bg-cyan-600 text-white hover:bg-cyan-700 py-3 font-semibold"
-            >
+            <Button type="submit" disabled={authLoading} className="w-full bg-cyan-600 text-white hover:bg-cyan-700 py-2 font-semibold">
               {authLoading ? "Logging in..." : "Login"}
             </Button>
           </form>
@@ -331,170 +310,28 @@ export default function Home() {
     );
   }
 
-  // Admin Dashboard View
-  if (showAdminDashboard && currentAgent.isAdmin) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <img src="https://pura.ai/wp-content/uploads/2025/06/logo.png" alt="PURA" className="h-8" />
-            <h1 className="text-2xl font-bold text-cyan-400">Admin Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={() => setShowAdminDashboard(false)}
-              variant="outline"
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
-            >
-              Back to Calling Panel
-            </Button>
-            <Button onClick={logout} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-              <LogOut size={16} className="mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-
-        {/* Total Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-slate-800 border-slate-700 p-4">
-            <p className="text-slate-400 text-sm mb-1">Total Appointments</p>
-            <p className="text-3xl font-bold text-cyan-400">{totalStats.total}</p>
-          </Card>
-          <Card className="bg-slate-800 border-slate-700 p-4">
-            <p className="text-slate-400 text-sm mb-1">Confirmed</p>
-            <p className="text-3xl font-bold text-green-400">{totalStats.confirmed}</p>
-          </Card>
-          <Card className="bg-slate-800 border-slate-700 p-4">
-            <p className="text-slate-400 text-sm mb-1">No Answer</p>
-            <p className="text-3xl font-bold text-red-400">{totalStats.noAnswer}</p>
-          </Card>
-          <Card className="bg-slate-800 border-slate-700 p-4">
-            <p className="text-slate-400 text-sm mb-1">Redirected</p>
-            <p className="text-3xl font-bold text-orange-400">{totalStats.redirected}</p>
-          </Card>
-        </div>
-
-        {/* Agent Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {Object.entries(agentStats).map(([agentName, stats]) => (
-            <Card key={agentName} className="bg-slate-800 border-slate-700 p-6">
-              <h3 className="text-lg font-bold text-cyan-400 mb-4">{agentName}</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Total Calls:</span>
-                  <span className="text-white font-semibold">{stats.total}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-green-400">Confirmed:</span>
-                  <span className="text-white font-semibold">{stats.confirmed}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-red-400">No Answer:</span>
-                  <span className="text-white font-semibold">{stats.noAnswer}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-orange-400">Redirected:</span>
-                  <span className="text-white font-semibold">{stats.redirected}</span>
-                </div>
-                <div className="pt-2 border-t border-slate-700 mt-2">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Success Rate:</span>
-                    <span className="text-cyan-400 font-semibold">
-                      {stats.total > 0 ? ((stats.confirmed / stats.total) * 100).toFixed(1) : 0}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {/* All Calls List */}
-        <Card className="bg-slate-800 border-slate-700 p-6">
-          <h3 className="text-lg font-bold text-cyan-400 mb-4">All Calls</h3>
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-2 pr-4">
-              {calls.length === 0 ? (
-                <p className="text-center text-slate-400 py-8">No calls yet</p>
-              ) : (
-                calls.map((call) => (
-                  <Card
-                    key={call.id}
-                    className={`bg-slate-700 border p-2 cursor-pointer hover:bg-slate-600 transition-colors text-sm ${
-                      call.status === "confirmed"
-                        ? "border-green-500/50"
-                        : call.status === "no_answer"
-                          ? "border-red-500/50"
-                          : "border-orange-500/50"
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-semibold text-white">{call.patientName}</p>
-                          <p className="text-xs text-slate-400">ID: {call.appointmentId}</p>
-                          <p className="text-xs text-slate-400">{call.clinic}</p>
-                        </div>
-                        <span
-                          className={`text-xs font-semibold px-2 py-1 rounded ${
-                            call.status === "confirmed"
-                              ? "bg-green-900/50 text-green-400"
-                              : call.status === "no_answer"
-                                ? "bg-red-900/50 text-red-400"
-                                : "bg-orange-900/50 text-orange-400"
-                          }`}
-                        >
-                          {call.status === "confirmed"
-                            ? "✓ Confirmed"
-                            : call.status === "no_answer"
-                              ? "✕ No Answer"
-                              : "→ Redirected"}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400">Agent: {call.agentName}</p>
-                      <p className="text-xs text-slate-400">{call.appointmentTime}</p>
-                      {call.comment && <p className="text-xs text-slate-300">{call.comment}</p>}
-                      <div className="flex gap-2 mt-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditCall(call.id)}
-                          className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-500 text-xs h-7"
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeleteCall(call.id)}
-                          className="flex-1 border-red-600/50 text-red-400 hover:bg-red-900/30 text-xs h-7"
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </Card>
-      </div>
-    );
-  }
-
-  // Main interface
+  // Main application screen
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <img src="https://pura.ai/wp-content/uploads/2025/06/logo.png" alt="PURA" className="h-8" />
-          <h1 className="text-2xl font-bold text-cyan-400">PURA Call Center</h1>
+          <img
+            src="https://pura.ai/wp-content/uploads/2025/06/logo.png"
+            alt="PURA Logo"
+            className="h-8"
+          />
+          <h1 className="text-3xl font-bold text-cyan-400">PURA Call Center</h1>
         </div>
         <div className="flex items-center gap-4">
+          <Button
+            onClick={handleDownloadData}
+            variant="outline"
+            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+          >
+            <Download size={16} className="mr-2" />
+            Download Data
+          </Button>
           <Button
             onClick={handleStartNewDay}
             variant="outline"
@@ -566,66 +403,23 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-200 mb-2">Clinic</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      disabled={isInProgress}
-                      className="w-full justify-start text-left font-normal bg-slate-700 border-slate-600 text-white hover:bg-slate-600"
-                    >
-                      {clinic || "Select clinic"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-0 bg-slate-800 border-slate-700" align="start">
-                    <div className="p-2">
-                      <Input
-                        type="text"
-                        placeholder="Search clinic..."
-                        value={clinicSearch}
-                        onChange={(e) => setClinicSearch(e.target.value)}
-                        className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 mb-2"
-                      />
-                      <ScrollArea className="h-[200px]">
-                        <div className="space-y-1 pr-4">
-                          {filteredClinics.map((c) => (
-                            <button
-                              key={c}
-                              onClick={() => {
-                                setClinic(c);
-                                setClinicSearch("");
-                              }}
-                              className="w-full text-left px-2 py-1 rounded text-sm text-slate-200 hover:bg-slate-700"
-                            >
-                              {c}
-                            </button>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-200 mb-2">Appointment Time</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      disabled={isInProgress}
-                      className="w-full justify-start text-left font-normal bg-slate-700 border-slate-600 text-white hover:bg-slate-600"
-                    >
-                      <Clock className="mr-2 h-4 w-4" />
-                      {appointmentTime}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-slate-800 border-slate-700" align="start">
-                    <TimePicker value={appointmentTime} onChange={(time) => setAppointmentTime(time)} />
-                  </PopoverContent>
-                </Popover>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-200 mb-2">Appointment Time</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={isInProgress}
+                    className="w-full justify-start text-left font-normal bg-slate-700 border-slate-600 text-white hover:bg-slate-600"
+                  >
+                    <Clock className="mr-2 h-4 w-4" />
+                    {appointmentTime}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-slate-800 border-slate-700" align="start">
+                  <TimePicker value={appointmentTime} onChange={(time) => setAppointmentTime(time)} />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <Button
@@ -637,16 +431,6 @@ export default function Home() {
               Calling on Pura
             </Button>
           </Card>
-
-          {/* Download Button */}
-          <Button
-            onClick={handleDownloadData}
-            variant="outline"
-            className="w-full border-slate-600 text-slate-300 hover:bg-slate-700 py-3 font-semibold flex items-center justify-center gap-2"
-          >
-            <Download size={18} />
-            Download Data
-          </Button>
 
           {/* Status Buttons */}
           {isInProgress && (
@@ -721,7 +505,7 @@ export default function Home() {
               <Search size={18} className="absolute left-3 top-3 text-slate-400" />
               <Input
                 type="text"
-                placeholder="Search by name, ID, clinic, or time..."
+                placeholder="Search by name, ID, or time..."
                 value={searchQuery === "__CLEARED__" ? "" : searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 pl-10 text-sm"
@@ -753,7 +537,7 @@ export default function Home() {
                           <div className="flex-1">
                             <p className="font-semibold text-white text-sm">{call.patientName}</p>
                             <p className="text-xs text-slate-400">ID: {call.appointmentId}</p>
-                            <p className="text-xs text-slate-400">{call.clinic}</p>
+                            <p className="text-xs text-cyan-400">Trials: {call.numberOfTrials}</p>
                           </div>
                           <span
                             className={`text-xs font-semibold px-1.5 py-0.5 rounded whitespace-nowrap ml-2 ${
@@ -805,6 +589,61 @@ export default function Home() {
           </Card>
         </div>
       </div>
+
+      {/* Admin Dashboard Modal */}
+      {showAdminDashboard && (
+        <Dialog open={showAdminDashboard} onOpenChange={setShowAdminDashboard}>
+          <DialogContent className="bg-slate-800 border-slate-700 max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-cyan-400">Admin Dashboard</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              {/* Total Statistics */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-200 mb-3">Overall Statistics</h3>
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="bg-slate-700 p-3 rounded">
+                    <p className="text-xs text-slate-400">Total Calls</p>
+                    <p className="text-2xl font-bold text-white">{totalStats.total}</p>
+                  </div>
+                  <div className="bg-green-900/30 p-3 rounded border border-green-500/30">
+                    <p className="text-xs text-green-400">Confirmed</p>
+                    <p className="text-2xl font-bold text-green-400">{totalStats.confirmed}</p>
+                  </div>
+                  <div className="bg-red-900/30 p-3 rounded border border-red-500/30">
+                    <p className="text-xs text-red-400">No Answer</p>
+                    <p className="text-2xl font-bold text-red-400">{totalStats.noAnswer}</p>
+                  </div>
+                  <div className="bg-orange-900/30 p-3 rounded border border-orange-500/30">
+                    <p className="text-xs text-orange-400">Redirected</p>
+                    <p className="text-2xl font-bold text-orange-400">{totalStats.redirected}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Agent Statistics */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-200 mb-3">Agent Statistics</h3>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {Object.entries(agentStats).map(([agent, stats]) => (
+                    <div key={agent} className="bg-slate-700 p-3 rounded text-sm">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="font-semibold text-white">{agent}</p>
+                        <p className="text-xs text-slate-400">Total: {stats.total}</p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="text-green-400">✓ Confirmed: {stats.confirmed}</div>
+                        <div className="text-red-400">✕ No Answer: {stats.noAnswer}</div>
+                        <div className="text-orange-400">→ Redirected: {stats.redirected}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Comment Modal */}
       <Dialog open={showCommentModal} onOpenChange={setShowCommentModal}>

@@ -5,11 +5,11 @@ export interface Call {
   id: number;
   patientName: string;
   appointmentId: string;
-  clinic: string;
   appointmentTime: string;
   agentName: string;
   status: "no_answer" | "confirmed" | "redirected";
   comment: string | null;
+  numberOfTrials: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,7 +17,7 @@ export interface Call {
 interface CallContextType {
   calls: Call[];
   isLoading: boolean;
-  addCall: (call: { patientName: string; appointmentId: string; clinic: string; appointmentTime: string; agentName: string; comment?: string | null }) => Promise<void>;
+  addCall: (call: { patientName: string; appointmentId: string; appointmentTime: string; agentName: string; comment?: string | null }) => Promise<void>;
   updateCall: (id: number, updates: Partial<Call>) => Promise<void>;
   deleteCall: (id: number) => Promise<void>;
   exportCalls: () => Promise<{ csv: string; fileName: string }>;
@@ -54,13 +54,12 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [listQuery.data]);
 
-  const addCall = async (call: { patientName: string; appointmentId: string; clinic: string; appointmentTime: string; agentName: string; comment?: string | null }) => {
+  const addCall = async (call: { patientName: string; appointmentId: string; appointmentTime: string; agentName: string; comment?: string | null }) => {
     setIsLoading(true);
     try {
       await createMutation.mutateAsync({
         patientName: call.patientName,
         appointmentId: call.appointmentId,
-        clinic: call.clinic,
         appointmentTime: call.appointmentTime,
         agentName: call.agentName,
         comment: call.comment ? call.comment : "",

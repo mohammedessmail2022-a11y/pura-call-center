@@ -29,11 +29,12 @@ describe("callsRouter", () => {
           id: 1,
           patientName: "John Doe",
           appointmentId: "12345",
-          clinic: "SSMC",
           appointmentTime: "10:00 AM",
           agentName: "Agent 1",
           status: "confirmed" as const,
           comment: "Test",
+          numberOfTrials: 1,
+          isActive: 1,
           createdAt: new Date("2026-02-09T08:00:00Z"),
           updatedAt: new Date("2026-02-09T08:00:00Z"),
         },
@@ -41,11 +42,12 @@ describe("callsRouter", () => {
           id: 2,
           patientName: "Jane Smith",
           appointmentId: "67890",
-          clinic: "Al Neyadat Health Center",
           appointmentTime: "11:00 AM",
           agentName: "Agent 2",
           status: "no_answer" as const,
           comment: null,
+          numberOfTrials: 1,
+          isActive: 1,
           createdAt: new Date("2026-02-09T09:00:00Z"),
           updatedAt: new Date("2026-02-09T09:00:00Z"),
         },
@@ -79,7 +81,6 @@ describe("callsRouter", () => {
       const result = await caller.create({
         patientName: "John Doe",
         appointmentId: "12345",
-        clinic: "SSMC",
         appointmentTime: "10:00 AM",
         agentName: "Agent 1",
         comment: "Test comment",
@@ -90,11 +91,11 @@ describe("callsRouter", () => {
       expect(db.createCall).toHaveBeenCalledWith({
         patientName: "John Doe",
         appointmentId: "12345",
-        clinic: "SSMC",
         appointmentTime: "10:00 AM",
         agentName: "Agent 1",
         status: "no_answer",
         comment: "Test comment",
+        numberOfTrials: 1,
       });
     });
 
@@ -107,7 +108,6 @@ describe("callsRouter", () => {
         await caller.create({
           patientName: "",
           appointmentId: "12345",
-          clinic: "SSMC",
           appointmentTime: "10:00 AM",
           agentName: "Agent 1",
         });
@@ -115,6 +115,44 @@ describe("callsRouter", () => {
       } catch (error) {
         expect(error).toBeDefined();
       }
+    });
+
+    it("should update existing call and increment numberOfTrials on duplicate", async () => {
+      const existingCall = {
+        id: 1,
+        patientName: "John Doe",
+        appointmentId: "12345",
+        appointmentTime: "10:00 AM",
+        agentName: "Agent 1",
+        status: "no_answer" as const,
+        comment: null,
+        numberOfTrials: 1,
+        isActive: 1,
+        createdAt: new Date("2026-02-09T08:00:00Z"),
+        updatedAt: new Date("2026-02-09T08:00:00Z"),
+      };
+
+      (db.findDuplicateCall as any).mockResolvedValue(existingCall);
+      (db.updateCallRecord as any).mockResolvedValue({} as any);
+
+      const caller = callsRouter.createCaller({});
+      const result = await caller.create({
+        patientName: "John Doe",
+        appointmentId: "12345",
+        appointmentTime: "10:30 AM",
+        agentName: "Agent 1",
+        comment: "Second attempt",
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.isUpdate).toBe(true);
+      expect(db.updateCallRecord).toHaveBeenCalledWith(1, {
+        appointmentTime: "10:30 AM",
+        agentName: "Agent 1",
+        status: "no_answer",
+        comment: "Second attempt",
+        numberOfTrials: 2,
+      });
     });
   });
 
@@ -156,11 +194,12 @@ describe("callsRouter", () => {
           id: 1,
           patientName: "John Doe",
           appointmentId: "12345",
-          clinic: "SSMC",
           appointmentTime: "10:00 AM",
           agentName: "Agent 1",
           status: "confirmed" as const,
           comment: "Test",
+          numberOfTrials: 1,
+          isActive: 1,
           createdAt: new Date("2026-02-09T08:00:00Z"),
           updatedAt: new Date("2026-02-09T08:00:00Z"),
         },
@@ -173,9 +212,9 @@ describe("callsRouter", () => {
 
       expect(result.success).toBe(true);
       expect(result.csv).toContain("ID,Patient Name,Appointment ID");
+      expect(result.csv).toContain("Number of Trials");
       expect(result.csv).toContain("John Doe");
       expect(result.csv).toContain("12345");
-      expect(result.csv).toContain("SSMC");
       expect(result.fileName).toMatch(/pura_calls_\d{4}-\d{2}-\d{2}\.csv/);
     });
 
@@ -185,11 +224,12 @@ describe("callsRouter", () => {
           id: 1,
           patientName: "John Doe",
           appointmentId: "12345",
-          clinic: "SSMC",
           appointmentTime: "10:00 AM",
           agentName: "Agent 1",
           status: "confirmed" as const,
           comment: "Test",
+          numberOfTrials: 2,
+          isActive: 1,
           createdAt: new Date("2026-02-09T08:00:00Z"),
           updatedAt: new Date("2026-02-09T08:00:00Z"),
         },
@@ -197,11 +237,12 @@ describe("callsRouter", () => {
           id: 2,
           patientName: "Jane Smith",
           appointmentId: "67890",
-          clinic: "Al Neyadat Health Center",
           appointmentTime: "11:00 AM",
           agentName: "Agent 2",
           status: "no_answer" as const,
           comment: null,
+          numberOfTrials: 1,
+          isActive: 1,
           createdAt: new Date("2026-02-09T09:00:00Z"),
           updatedAt: new Date("2026-02-09T09:00:00Z"),
         },
@@ -217,6 +258,7 @@ describe("callsRouter", () => {
       expect(result.csv).toContain("Jane Smith");
       expect(result.csv).toContain("12345");
       expect(result.csv).toContain("67890");
+      expect(result.csv).toContain("2"); // numberOfTrials for John Doe
     });
   });
 });
